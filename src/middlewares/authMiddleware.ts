@@ -2,25 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { errorResponse } from "../utils/response";
 import dotenv from "dotenv";
+import { UserPayload } from "@root/global";
 
 dotenv.config();
-
-interface UserPayload {
-  id: string;
-  role: string;
-  username: string;
-  email: string;
-  name: string;
-  isVerified: string;
-}
-
-declare global {
-  namespace Express {
-    interface Request {
-      currentUser?: UserPayload;
-    }
-  }
-}
 
 const requireAuth = (
   req: Request,

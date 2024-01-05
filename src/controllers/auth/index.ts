@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import authSecret from "../../config/auth";
-import { generateId } from "../../utils/helpers";
-import { authResponse, successResponse, errorResponse } from "../../utils/response";
-import Users from "../../models/Users.model";
+import authSecret from "@config/auth";
+import { generateId } from "@utils/helpers";
+import { authResponse, successResponse, errorResponse } from "@utils/response";
+import Users from "@models/Users.model";
 
 export const login = async (req: Request, res: Response) => {
   const { user, password } = req.body;
@@ -15,7 +15,6 @@ export const login = async (req: Request, res: Response) => {
       .where((q) =>
         q.where("users.username", user)
           .orWhere("users.email", user)
-          .orWhere("users.phone", user)
       )
       .first();
 
@@ -32,11 +31,9 @@ export const login = async (req: Request, res: Response) => {
 
       const token = jwt.sign({
         id: dataUser.id,
-        role: dataUser.role,
         username: dataUser.username,
         email: dataUser.email,
         name: dataUser.name,
-        isVerified: dataUser.is_verified,
       }, authSecret, {
         expiresIn: 1 * 12 * 60 * 60
       });
@@ -46,8 +43,6 @@ export const login = async (req: Request, res: Response) => {
         name: dataUser.name,
         username: dataUser.username,
         email: dataUser.email,
-        phone: dataUser.phone,
-        role: dataUser.role,
         avatar: dataUser.avatar
       };
 
@@ -72,7 +67,6 @@ export const register = async (req: Request, res: Response) => {
       name: string;
       password: string;
       email: string;
-      is_verified: boolean;
       is_active: boolean;
     }
     
@@ -81,11 +75,10 @@ export const register = async (req: Request, res: Response) => {
       name,
       email,
       password: hashedPassword,
-      is_verified: false,
       is_active: true
     };
 
-    const isUserExist = await Users.querySoftDelete().findOne({"users.email": email});
+    const isUserExist = await Users.query().findOne({"users.email": email});
 
     if (isUserExist) {
       res.status(409).json(
@@ -93,8 +86,8 @@ export const register = async (req: Request, res: Response) => {
       );
     } else {
       const user = await Users.query().insert(formData);
-      const { password, is_verified, is_active, ...rest } = user;
-      const updatedUser = { ...rest, isVerified: is_verified, isActive: is_active };
+      const { password, is_active, ...rest } = user;
+      const updatedUser = { ...rest, isActive: is_active };
       
       res.status(201).json(
         successResponse("Success", { results: updatedUser })

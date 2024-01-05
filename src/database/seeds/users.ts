@@ -7,25 +7,21 @@ interface User {
   name: string;
   email: string;
   password: string;
-  is_verified: boolean;
   is_active: boolean;
 }
 
 const users: User[] = [
   {
-    id: "A000000000000001",
-    name: "Administrator",
-    username: "admin",
-    email: "admin@admin.com",
-    password: "admin",
-    is_verified: true,
+    id: "R000001",
+    name: "Restu Dwi Cahyo",
+    username: "resitdc",
+    email: "restu@resitdc.id",
+    password: "restuganteng",
     is_active: true,
   }
 ];
 
 export const seed = async (knex: Knex): Promise<void> => {
-  await knex("users").truncate();
-
   await Promise.all(
     users.map(async (user: User) => {
       const hashedPassword = await bcrypt.hash(user.password, 13);

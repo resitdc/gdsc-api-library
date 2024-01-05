@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import Users from "../../models/Users.model";
-import { paginationResponse, successResponse, errorResponse } from "../../utils/response";
-import { generateId } from "../../utils/helpers";
+import MUsers from "@models/Users.model";
+import { paginationResponse, successResponse, errorResponse } from "@utils/response";
+import { generateId } from "@utils/helpers";
+import "@root/global";
 
 export const listData = async (req: Request, res: Response) => {
   const limit: number = Number(req.query.limit) || 10;
@@ -10,7 +11,7 @@ export const listData = async (req: Request, res: Response) => {
   const searchKeywords: string | null = req.query?.s ? String(req.query.s)?.toLowerCase() : null;
 
   try {
-    const { total, results } = await Users.querySoftDelete()
+    const { total, results } = await MUsers.query()
       .select(
         "users.id",
         "users.name",
@@ -56,7 +57,7 @@ export const listData = async (req: Request, res: Response) => {
 export const detailData = async (req: Request, res: Response) => {
   const userId = req.params.id;
   try {
-    const user = await Users.querySoftDelete()
+    const user = await MUsers.query()
       .select(
         "users.id",
         "users.name",
@@ -140,16 +141,16 @@ export const createData = async (req: Request, res: Response) => {
     if (avatar) formData["avatar"] = avatar;
     if (role) formData["role"] = role || "USER";
 
-    const isUserExist = await Users.querySoftDelete().findOne({"users.email": email});
+    const isUserExist = await MUsers.query().findOne({"users.email": email});
     
     if (isUserExist) {
       res.status(409).json(
         errorResponse("Email already exists", { results: null })
       );
     } else {
-      const user = await Users.query().insert(formData);
-      const { password, is_verified, is_active, ...rest } = user;
-      const updatedUser = { ...rest, isVerified: is_verified, isActive: is_active };
+      const user = await MUsers.query().insert(formData);
+      const { password, is_active, ...rest } = user;
+      const updatedUser = { ...rest, isActive: is_active };
       
       res.status(201).json(
         successResponse("Success", {
@@ -182,7 +183,7 @@ export const updateData = async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await Users.querySoftDelete().findById(userId).patch({
+    const user = await MUsers.query().findById(userId).patch({
       name,
       email,
       password: hashedPassword,
@@ -193,23 +194,66 @@ export const updateData = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteData = async (req: Request, res: Response) => {
-  const userId = req.params.id;
-  try {
-    await Users.softDelete(userId);
-
-    res.status(200).json(
-      successResponse("Deleted", { results: null })
-    );
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      res.status(500).json(
-        errorResponse(error?.message, { results: null })
-      );
-    } else {
-      res.status(500).json(
-        errorResponse("Internal server error", { results: null })
-      );
+export const myProfile = async (req: Request, res: Response) => {
+  const userId = req.currentUser?.id;
+  if (userId) {
+    try {
+      const user = await MUsers.query()
+        .select(
+          "users.id",
+          "users.name",
+          "users.username",
+          "users.email",
+          "users.avatar",
+          "users.is_active as isActive",
+          "users.created_at as createdAt",
+          "users.updated_at as updatedAt",
+        )
+        .withGraphFetched("rental as books")
+        .modifyGraph("books",
+          (builder) => {
+            builder
+              .select(
+                "master_books.id",
+                "master_books.title",
+                "master_books.writer",
+                "master_books.publisher",
+                "master_books.publication_year as publicationYear",
+                "master_books.genre",
+                "master_books.cover"
+              )
+              .leftJoin("books", "books.id", "rental.book_id")
+              .leftJoin("master_books", "master_books.id", "books.master_book_id")
+              .where({
+                "rental.type": "RENT"
+              });
+          }
+        )
+        .findById(userId);
+  
+      if (user) {
+        res.status(200).json(
+          successResponse("SUCCESS", { results: user })
+        );
+      } else {
+        res.status(404).json(
+          errorResponse("DATA NOT FOUND", { results: null })
+        );
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        res.status(500).json(
+          errorResponse(error?.message, { results: null })
+        );
+      } else {
+        res.status(500).json(
+          errorResponse("Internal server error", { results: null })
+        );
+      }
     }
+  } else {
+    res.status(404).json(
+      errorResponse("user not found", { results: null })
+    );
   }
 };

@@ -1,17 +1,20 @@
 import { Knex } from "knex";
-const table:string = "users";
+const table:string = "master_books";
 
 export const up = async (knex: Knex): Promise<void> => {
   await knex.schema.createTable(table, (t) => {
     t.string("id", 100).primary().notNullable();
-    t.string("name", 200);
-    t.string("username", 100).nullable().unique();
-    t.text("email").nullable().unique();
-    t.text("password").notNullable();
-    t.text("avatar");
-    t.boolean("is_active").defaultTo(false);
+    t.string("title", 200);
+    t.string("writer", 200);
+    t.string("publisher", 200);
+    t.string("publication_year", 4);
+    t.string("genre", 50);
+    t.text("description");
+    t.text("cover");
+    t.boolean("is_publish").defaultTo(false);
     t.timestamp("created_at", { useTz: true }).defaultTo(knex.fn.now());
     t.timestamp("updated_at", { useTz: true }).nullable();
+    t.datetime("deleted_at").nullable();
   });
 };
 

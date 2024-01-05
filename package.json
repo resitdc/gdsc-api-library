@@ -9,7 +9,8 @@
     "build": "npx tsc",
     "migrate": "npx knex migrate:latest --env development --knexfile knexfile.ts",
     "migrate:rollback": "npx knex migrate:rollback --env development --knexfile knexfile.ts",
-    "migrate:make": "npx knex migrate:make %npm_config_name% --env development --knexfile knexfile.ts -x ts"
+    "migrate:make": "npx knex migrate:make %npm_config_name% --env development --knexfile knexfile.ts -x ts",
+    "seed": "npx knex seed:run --env development --knexfile knexfile.ts"
   },
   "repository": {
     "type": "git",
